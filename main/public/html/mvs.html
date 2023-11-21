@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Movie Recommendation System</title>
+    <link rel="stylesheet" href="/css/mvs.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" />
+    <script src="/js/common.js"></script>
+</head>
+
+<body>
+    <div class="wrapper">
+        <a href="#tags">
+            <div class="logo">
+                <div class="container">
+                    <p>M<span>V<span>S</span></span></p>
+                </div>
+            </div>
+        </a>
+        <!--search bar-->
+        <div class="search-bar">
+            <div class="search-element">
+                <h3>Search Movie/Series:</h3>
+                <input type="text" class="form-control" placeholder="Search Movie Title ..." id="movie-search-box" onkeyup="findMovies()" onclick="findMovies()">
+                <div class="search-list" id="search-list">
+                    <!--list here-->
+                </div>
+            </div>
+        </div>
+        <!--End of search bar-->
+
+        <!-- Favorite movies section -->
+        <div class="favorite-section">
+            <h2>Favorite Movies</h2>
+            <div class="favorite-grid" id="favorite-grid">
+            </div>
+        </div>
+
+        <!-- Button to access the favorite section -->
+        <a href="favorites.html"><button class="favorite-btn" id="favorite-btn">View Favorites</button></a>
+
+        <!--Movie Genres-->
+        <div class="searchmoviebygenre">
+            <div class="actor-container"> <!-- New actor container div -->
+                <input type="text" id="actor-input" placeholder="Search for an actor">
+                <button id="generate-movies-btn" style="display: none;">Generate Movies</button>
+                <div id="autocomplete-list">
+                    <div class="suggestions"></div>
+                </div>
+            </div> <!-- End of new actor container div -->
+            <div id="tags">
+                <!-- Movie genres will be populated here -->
+            </div>
+            <!--End of movie genres-->
+
+            <div id="movie-display">
+            </div>
+        </div>
+
+        <!--result container-->
+        <div id="details-container" class="details-container">
+            <div class="container">
+                <div class="result-container">
+                    <div class="result-grid" id="result-grid">
+                    </div>
+                </div>
+            </div>
+            <!--end of result container-->
+        </div>
+    </div>
+
+    <script>
+        async function fetchFavorites() {
+  try {
+    const response = await fetchWithToken('/api/user/favorites');
+    const favorites = await response.json();
+    displayFavorites(favorites);
+  } catch (error) {
+    console.error(`Error fetching favorites: ${error.status} ${error.statusText}`);
+  }
+}
+
+      
+        fetchFavorites(); // Call the fetchFavorites function when the page loads
+      </script>
+      <script>
+        (async () => {
+    try {
+        const response = await fetchWithToken("/api/user/favorites");
+        if (response.status === 200) {
+            const data = await response.json();
+            // Handle the data here
+        } else {
+            const error = await response.json();
+            // Handle the error here
+        }
+    } catch (error) {
+        console.error("Error fetching data:", error);
+    }
+})();
+
+    </script>
+    <!--mvs js-->
+    <script src="/js/mvs.js"></script>
+    <script src="/js/favorite.js"></script>
+</body>
+</html>

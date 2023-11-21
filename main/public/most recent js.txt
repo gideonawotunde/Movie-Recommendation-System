@@ -1,0 +1,385 @@
+document.addEventListener('DOMContentLoaded', () => {
+  console.log('domcontentloaded')
+    const movieSearchBox = document.querySelector('#movie-search-box');
+    const searchList = document.querySelector('#search-list');
+    const resultGrid = document.querySelector('#result-grid');
+    const IMG_PATH = "https://image.tmdb.org/t/p/w500/";
+
+    movieSearchBox.addEventListener('input', findMovies);
+
+    const API_KEY = "3b9911169259873b40c7c8420d4a37ce";
+    const BASE_URL = 'https://api.themoviedb.org/3';
+    const API_URL = `${BASE_URL}/discover/movie?sort_by=popularity.desc&api_key=${API_KEY}`;
+    const genres = [
+        {
+          "id": 28,
+          "name": "Action"
+        },
+        {
+          "id": 12,
+          "name": "Adventure"
+        },
+        {
+          "id": 16,
+          "name": "Animation"
+        },
+        {
+          "id": 35,
+          "name": "Comedy"
+        },
+        {
+          "id": 80,
+          "name": "Crime"
+        },
+        {
+          "id": 99,
+          "name": "Documentary"
+        },
+        {
+          "id": 18,
+          "name": "Drama"
+        },
+        {
+          "id": 10751,
+          "name": "Family"
+        },
+        {
+          "id": 14,
+          "name": "Fantasy"
+        },
+        {
+          "id": 36,
+          "name": "History"
+        },
+        {
+          "id": 27,
+          "name": "Horror"
+        },
+        {
+          "id": 10402,
+          "name": "Music"
+        },
+        {
+          "id": 9648,
+          "name": "Mystery"
+        },
+        {
+          "id": 10749,
+          "name": "Romance"
+        },
+        {
+          "id": 878,
+          "name": "Science Fiction"
+        },
+        {
+          "id": 10770,
+          "name": "TV Movie"
+        },
+        {
+          "id": 53,
+          "name": "Thriller"
+        },
+        {
+          "id": 10752,
+          "name": "War"
+        },
+        {
+          "id": 37,
+          "name": "Western"
+        }
+      ]
+    
+      const tagsEl = document.getElementById('tags');
+
+      var selectedGenre = []
+      setGenre();
+      function setGenre() {
+          tagsEl.innerHTML= '';
+          genres.forEach(genre => {
+              const t = document.createElement('div');
+              t.classList.add('tag');
+              t.id=genre.id;
+              t.innerText = genre.name;
+              t.addEventListener('click', () => {
+                  if(selectedGenre.length == 0){
+                      selectedGenre.push(genre.id);
+                  }else{
+                      if(selectedGenre.includes(genre.id)){
+                          selectedGenre.forEach((id, idx) => {
+                              if(id == genre.id){
+                                  selectedGenre.splice(idx, 1);
+                              }
+                          })
+                      }else{
+                          selectedGenre.push(genre.id);
+                      }
+                  }
+                  console.log(selectedGenre)
+                  
+                  highlightSelection()
+              })
+              tagsEl.append(t);
+          })
+      }
+    
+      function highlightSelection() {
+        const tags = document.querySelectorAll('.tag');
+        tags.forEach(tag => {
+            tag.classList.remove('highlight')
+        })
+        
+        if(selectedGenre.length !=0){   
+            selectedGenre.forEach(id => {
+                const hightlightedTag = document.getElementById(id);
+                hightlightedTag.classList.add('highlight');
+            })
+        }
+        const generateMoviesBtn = document.getElementById("generate-movies-btn");
+        if (selectedGenre.length > 0) {
+          generateMoviesBtn.style.display = "block";
+        } else {
+          generateMoviesBtn.style.display = "none";
+        }
+    
+    }
+   
+   async function loadMovies(searchTerm, genres) {
+  let url;
+  
+  if (searchTerm) {
+    url = `${BASE_URL}/search/movie?api_key=${API_KEY}&query=${encodeURIComponent(searchTerm)}`;
+  } else if (genres) {
+    url = `${BASE_URL}/discover/movie?api_key=${API_KEY}&with_genres=${encodeURIComponent(genres)}`;
+  }
+  
+  const res = await fetch(url);
+  const data = await res.json();
+  if(data.results.length > 0) {
+    displayMovieList(data.results);
+  } else {
+    movieList.innerHTML = '<p>No movies found</p>';
+  }
+}
+
+    
+    
+    function findMovies(event) {
+  const searchTerm = event.target.value.trim();
+  if (searchTerm.length > 0 || selectedGenre.length > 0) {
+    searchList.classList.remove('hide-search-list');
+    const genresParam = selectedGenre.join(",");
+    loadMovies(searchTerm, genresParam);
+  } else {
+    searchList.classList.add('hide-search-list');
+  }
+}
+
+    function displayMovieList(movies){
+      resultGrid.innerHTML = '';
+        searchList.innerHTML = "";
+        for(let idx = 0; idx < movies.length; idx++){
+            let movieListItem = document.createElement('div');
+            movieListItem.dataset.id = movies[idx].id;
+            movieListItem.classList.add('search-list-item');
+
+            let moviePoster = "";
+            if (movies[idx].poster_path !== null) {
+                moviePoster = `${IMG_PATH}${movies[idx].poster_path}`;
+            } else {
+                moviePoster = "image_not_found.png";
+            }
+            
+
+            movieListItem.innerHTML = `
+            <div class = "search-item-thumbnail">
+                <img src = "${moviePoster}">
+            </div>
+            <div class = "search-item-info">
+                <h3>${movies[idx].title}</h3>
+                <p>${movies[idx].release_date.slice(0, 4)}</p>
+            </div>
+            `;
+            searchList.appendChild(movieListItem);
+        }
+        loadMovieDetails();
+    }
+    
+
+    function loadMovieDetails(){
+        const searchListMovies = searchList.querySelectorAll('.search-list-item');
+        searchListMovies.forEach(movie => {
+          movie.addEventListener('click', async () => {
+            searchList.classList.add('hide-search-list');
+            movieSearchBox.value = "";
+            const API_KEY = "3b9911169259873b40c7c8420d4a37ce";
+            const detailsResult = await fetch(`https://api.themoviedb.org/3/movie/${movie.dataset.id}?api_key=${API_KEY}`);
+            const detailsData = await detailsResult.json();
+            
+            const creditsResult = await fetch(`https://api.themoviedb.org/3/movie/${movie.dataset.id}/credits?api_key=${API_KEY}`);
+            const creditsData = await creditsResult.json();
+            const cast = creditsData.cast.slice(0, 5).map(actor => ({name: actor.name, character: actor.character}));
+            
+            const movieDetails = {
+              title: detailsData.title,
+              release_date: detailsData.release_date.slice(0, 4),
+              vote_average: detailsData.vote_average,
+              runtime: detailsData.runtime,
+              genres: detailsData.genres,
+              director: getDirector(creditsData.crew),
+              cast: cast,
+              overview: detailsData.overview,
+              original_language: detailsData.original_language,
+              production_companies: detailsData.production_companies,
+              poster_path: `https://image.tmdb.org/t/p/w500${detailsData.poster_path}`
+            };
+            displayMovieDetails(movieDetails);
+          });
+        });
+      }
+      
+      function getDirector(crew) {
+        const director = crew.find(member => member.job === "Director");
+        if(director) {
+          return director.name;
+        } else {
+          return "N/A";
+        }
+      }
+      
+      function displayMovieDetails(details) {
+         
+          resultGrid.innerHTML = `
+            <div class="movie-poster">
+              <img src="${details.poster_path}" alt="movie poster">
+            </div>
+            <div class="movie-info">
+              <h3 class="movie-title">${details.title}</h3>
+              <ul class="movie-misc-info">
+                <li class="year">Year: ${details.release_date}</li>
+                <li class="rated">
+      Ratings: ${details.vote_average}</li>
+          <li class="released">Runtime: ${details.runtime} min</li>
+        </ul>
+        <p class="genre"><b>Genre:</b> ${details.genres.map(genre => genre.name).join(", ")}</p>
+        <p class="writer"><b>Director:</b> ${details.director}</p>
+        <p class="actors"><b>Cast:</b> ${details.cast.map(actor => actor.name).join(", ")}</p>
+        <p class="plot"><b>Overview:</b> ${details.overview}</p>
+        <p class="language"><b>Language:</b> ${details.original_language}</p>
+        <p class="awards"><b><i class="fas fa-award"></i></b> ${details.production_companies.map(company => company.name).join(", ")}</p>
+      </div>
+    `;
+  }
+  
+
+function createMovieElement(movie) {
+  const movieEl = document.createElement("div");
+  movieEl.classList.add("movie");
+
+  // Create movie image element
+  const movieImg = document.createElement("img");
+  movieImg.src = IMG_PATH + movie.poster_path;
+  movieImg.alt = movie.title;
+
+  // Add movie image to movie element
+  movieEl.appendChild(movieImg);
+
+  // Create movie info element
+  const movieInfo = document.createElement("div");
+  movieInfo.classList.add("movie-info");
+
+  // Create movie title element
+  const movieTitle = document.createElement("h3");
+  movieTitle.classList.add("movie-title");
+  movieTitle.innerText = movie.title;
+
+  // Add movie title to movie info element
+  movieInfo.appendChild(movieTitle);
+
+  // Create movie rating element
+  const movieRating = document.createElement("span");
+  movieRating.classList.add("movie-rating");
+  movieRating.innerText = movie.vote_average;
+
+  // Add movie rating to movie info element
+  movieInfo.appendChild(movieRating);
+
+  // Add movie info to movie element
+  movieEl.appendChild(movieInfo);
+
+  return movieEl;
+}
+
+// Display movies by genre
+function displayMoviesByGenre(genres) {
+  // Generate a seed value based on the current time
+  const seed = Date.now();
+
+  // Build API URL with selected genres and seed value
+  const apiUrl = `https://api.themoviedb.org/3/discover/movie?api_key=${API_KEY}&sort_by=popularity.desc&with_genres=${encodeURI(genres.join(','))}&seed=${seed}`;
+
+  // Make API request
+  fetch(apiUrl)
+    .then(response => response.json())
+    .then(data => {
+      // Get movie results from API response
+      const movies = data.results;
+      let movieContainer = document.createElement('div');
+
+      // Clear current movie display
+      const currentMovieContainer = document.getElementById('movie-container');
+      if (currentMovieContainer !== null) {
+        currentMovieContainer.innerHTML = "";
+      }
+
+      // Loop through movies and add to movie display
+      movies.forEach(movie => {
+        const movieEl = createMovieElement(movie);
+        movieEl.classList.add("movie");
+
+        // Add movie element to movie container
+        movieContainer.appendChild(movieEl);
+      });
+
+      // Log movie names to console
+      console.log(movies.map(movie => movie.title));
+
+      // Add movie container to page
+      const movieDisplay = document.getElementById('movie-display');
+      if (movieDisplay !== null) {
+        movieDisplay.appendChild(movieContainer);
+      }
+      
+    })
+    .catch(error => {
+      console.error("Error fetching movies:", error);
+    });
+}
+
+
+      
+window.addEventListener('click', (event) => {
+    if(event.target.className != "form-control"){
+        searchList.classList.add('hide-search-list');
+    }
+});
+
+
+
+const generateMoviesBtn = document.getElementById("generate-movies-btn");
+
+generateMoviesBtn.addEventListener("click", () => {
+  if (selectedGenre.length > 0) {
+    console.log('buttonclicked')
+    displayMoviesByGenre(selectedGenre);
+  } else {
+    displayMoviesByGenre();
+  }
+});
+
+
+
+
+
+
+
+});

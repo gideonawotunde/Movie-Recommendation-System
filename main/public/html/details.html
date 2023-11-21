@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Movie Details</title>
+  <link rel="stylesheet" href="/css/mvs.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" />
+
+</head>
+<body>
+  <div id="details-container">
+    <div class="details-display">
+      <div class="movie-poster"></div>
+      <div class="movie-info"></div>
+    </div>
+    
+  </div>
+  <script>
+    // Get movie ID from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const movieId = urlParams.get("movieId");
+  
+    // Fetch and display movie details
+    if (movieId) {
+      const API_KEY = "3b9911169259873b40c7c8420d4a37ce";
+      (async () => {
+        const detailsResult = await fetch(`https://api.themoviedb.org/3/movie/${movieId}?api_key=${API_KEY}`);
+        const detailsData = await detailsResult.json();
+  
+        const creditsResult = await fetch(`https://api.themoviedb.org/3/movie/${movieId}/credits?api_key=${API_KEY}`);
+        const creditsData = await creditsResult.json();
+        const cast = creditsData.cast.slice(0, 5).map(actor => ({name: actor.name, character: actor.character}));
+  
+        const movieDetails = {
+          id: detailsData.id,
+          title: detailsData.title,
+          release_date: detailsData.release_date.slice(0, 4),
+          vote_average: detailsData.vote_average,
+          runtime: detailsData.runtime,
+          genres: detailsData.genres,
+          director: getDirector(creditsData.crew),
+          cast: cast,
+          overview: detailsData.overview,
+          original_language: detailsData.original_language,
+          production_companies: detailsData.production_companies,
+          poster_path: `https://image.tmdb.org/t/p/w500${detailsData.poster_path}`,
+          backdrop_path: detailsData.backdrop_path ? `https://image.tmdb.org/t/p/original${detailsData.backdrop_path}` : null
+        };
+        displayMovieDetails(movieDetails);
+      })();
+    }
+    function getDirector(crew) {
+        const director = crew.find(member => member.job === "Director");
+        if(director) {
+          return director.name;
+        } else {
+          return "N/A";
+        }
+      }
+      
+      function displayMovieDetails(details) {
+  // Set the backdrop poster as the background of the details-container element
+  const detailsContainer = document.getElementById("details-container");
+  if (details.backdrop_path) {
+    const backdropPath = details.backdrop_path;
+    detailsContainer.style.backgroundImage = `url(${backdropPath})`;
+  }
+
+  // Create movie info element and favorite button
+  const movieInfo = document.createElement("div");
+  const favoriteIcon = document.createElement("i");
+  favoriteIcon.classList.add("favorite-icon", "fas", "fa-heart", "details-favorite-icon");
+
+  // Check if movie is already in favorites
+  const favorites = JSON.parse(localStorage.getItem("favorites")) || [];
+  if (favorites.some((favorite) => favorite.id === details.id)) {
+    favoriteIcon.classList.remove("fa-heart");
+    favoriteIcon.classList.add("fa-heart-broken");
+  }
+
+  // Add event listener to favorite icon
+  const movie = {
+    id: details.id,
+    title: details.title,
+    poster_path: details.poster_path.slice(32), // Remove the base URL from poster_path
+    vote_average: details.vote_average,
+  };
+  favoriteIcon.addEventListener("click", function toggleFavorite() {
+    if (favoriteIcon.classList.contains("fa-heart")) {
+      addToFavorites(movie);
+    } else {
+      removeFromFavorites(movie);
+    }
+  });
+
+  // Update the content of the movie info element
+  movieInfo.innerHTML = `
+    <h3 class="movie-title">${details.title} <span class="favorite-button"></span></h3>
+    <ul class="movie-misc-info">
+      <li class="year">Year: ${details.release_date}</li>
+      <li class="rated">Ratings: ${details.vote_average}</li>
+      <li class="released">Runtime: ${details.runtime} min</li>
+    </ul>
+    <p class="genre"><b>Genre:</b> ${details.genres
+      .map((genre) => genre.name)
+      .join(", ")}</p>
+    <p class="writer"><b>Director:</b> ${details.director}</p>
+    <p class="actors"><b>Cast:</b> ${details.cast
+      .map((actor) => actor.name)
+      .join(", ")}</p>
+    <p class="plot"><b>Overview:</b> ${details.overview}</p>
+    <p class="language"><b>Language:</b> ${details.original_language}</p>
+    <p class="awards"><b><i class="fas fa-award"></i></b> ${details.production_companies
+      .map((company) => company.name)
+      .join(", ")}</p>
+  `;
+
+  // Add favorite icon to the favorite-button element
+  const favoriteButton = movieInfo.querySelector(".favorite-button");
+  favoriteButton.appendChild(favoriteIcon);
+
+  // Add movie info element to .details-display element
+  const detailsDisplay = document.querySelector(".details-display");
+  detailsDisplay.appendChild(movieInfo);
+
+  // Update the content of the movie poster element
+  const moviePoster = document.querySelector(".movie-poster");
+  moviePoster.innerHTML = `
+    <img src="${details.poster_path}" alt="movie poster">
+  `;
+}
+
+    
+
+function addToFavorites(movie) {
+const favoriteIcon = document.querySelector(".favorite-icon");
+
+let favorites = localStorage.getItem("favorites");
+
+if (favorites) {
+favorites = JSON.parse(favorites);
+} else {
+favorites = [];
+}
+
+if (!favorites.some((favorite) => favorite.id === movie.id)) {
+favorites.push(movie);
+localStorage.setItem("favorites", JSON.stringify(favorites));
+}
+
+// Change the icon class
+favoriteIcon.classList.remove("fa-heart");
+favoriteIcon.classList.add("fa-heart-broken");
+
+// Update the event listener
+favoriteIcon.removeEventListener("click", () => addToFavorites(movie));
+favoriteIcon.addEventListener("click", () => removeFromFavorites(movie));
+
+sessionStorage.setItem(`favorite-${movie.id}`, JSON.stringify(movie));
+}
+
+function removeFromFavorites(movie) {
+const favoriteIcon = document.querySelector(".favorite-icon");
+
+let favorites = localStorage.getItem("favorites");
+
+if (favorites) {
+favorites = JSON.parse(favorites);
+favorites = favorites.filter((favorite) => favorite.id !== movie.id);
+localStorage.setItem("favorites", JSON.stringify(favorites));
+}
+
+// Change the icon class
+favoriteIcon.classList.remove("fa-heart-broken");
+favoriteIcon.classList.add("fa-heart");
+
+// Update the event listener
+favoriteIcon.removeEventListener("click", () => removeFromFavorites(movie));
+favoriteIcon.addEventListener("click", () => addToFavorites(movie));
+
+sessionStorage.removeItem(`favorite-${movie.id}`);
+}
+
+
+  
+
+  </script>
+</body>
+</html>
